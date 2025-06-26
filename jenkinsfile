@@ -1,8 +1,23 @@
 pipeline {
     agent any
 
+    tools {
+        nodejs 'NodeJS-24'
+    }
+
+    environment {
+        SLACK_WEBHOOK = 'https://hooks.slack.com/services/T093UNB6D24/B0934AMQXSA/p0WhL4QSgU0Yq9XOh5k5K4M'
+        RENDER_DEPLOY_HOOK = 'https://api.render.com/deploy/srv-d1ej2v2li9vc73a4mf1g?key=eGUcplom-To'
+    }
+
     stages {
-        stage('Install Dependencies') {
+        stage('Clone Repository') {
+            steps {
+                git branch: 'master', url: 'https://github.com/d-0pZ/gallery.git'
+            }
+        }
+
+        stage('Initial Dependencies') {
             steps {
                 sh 'npm install'
             }
@@ -12,56 +27,47 @@ pipeline {
             steps {
                 sh 'npm test'
             }
-        }
-
-        stage('Deploy to Render') {
-            steps {
-                echo 'Triggering Render deployment...'
-                // Optionally add your Render webhook here
-                // sh 'curl -X POST pipeline {
-    agent any
-
-    stages {
-        stage('Install Dependencies') {
-            steps {
-                sh 'npm install'
-            }
-        }
-
-        stage('Run Tests') {
-            steps {
-                sh 'npm test'
+            post {
+                failure {
+                    emailext(
+                        subject: "❌ Test Failed: ${env.JOB_NAME} - ${env.BUILD_NUMBER}",
+                        body: "Tests failed in build #${env.BUILD_NUMBER}.\nCheck logs at: ${env.BUILD_URL}",
+                        to: "glen.omondi@student.moringaschool.com"
+                    )
+                }
             }
         }
 
         stage('Deploy to Render') {
             steps {
-                echo 'Triggering Render deployment...'
-                // Optionally add your Render webhook here
-                // sh 'curl -X POST https://api.render.com/deploy/srv-xxxxxxx'
+                echo 'Deploying to Render...'
+                sh """
+                    curl -X POST "${RENDER_DEPLOY_HOOK}"
+                """
+            }
+            post {
+                success {
+                    echo 'Sending Slack notification...'
+                    sh """
+                    curl -X POST -H 'Content-type: application/json' \
+                    --data '{"text":"✅ *Build #${BUILD_NUMBER}* successfully deployed!\\n🌐 [View Site](https://gallery-pxfl.onrender.com)\\n🚩 MILESTONE 2, 3, and 4 deployed."}' \
+                    "${SLACK_WEBHOOK}"
+                    """
+                }
             }
         }
     }
 
     post {
+        success {
+            echo '✅ Pipeline completed successfully!'
+        }
         failure {
-            mail to: 'glen.omondi@student.moringaschool.com',
-                 subject: "🚨 Jenkins Build Failed",
-                 body: "Tests failed in Jenkins pipeline. Please investigate."
+            echo '❌ Pipeline failed!'
         }
     }
 }
-'
-            }
-        }
-    }
 
-    post {
-        failure {
-            mail to: 'glen.omondi@student.moringaschool.com',
-                 subject: "🚨 Jenkins Build Failed",
-                 body: "Tests failed in Jenkins pipeline. Please investigate."
-        }
     }
 }
 // This Jenkinsfile defines a simple pipeline with one stage that prints a message to the console.
