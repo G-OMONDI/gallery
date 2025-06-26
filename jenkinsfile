@@ -18,6 +18,26 @@ pipeline {
             steps {
                 echo 'Triggering Render deployment...'
                 // Optionally add your Render webhook here
+                // sh 'curl -X POST pipeline {
+    agent any
+
+    stages {
+        stage('Install Dependencies') {
+            steps {
+                sh 'npm install'
+            }
+        }
+
+        stage('Run Tests') {
+            steps {
+                sh 'npm test'
+            }
+        }
+
+        stage('Deploy to Render') {
+            steps {
+                echo 'Triggering Render deployment...'
+                // Optionally add your Render webhook here
                 // sh 'curl -X POST https://api.render.com/deploy/srv-xxxxxxx'
             }
         }
@@ -25,7 +45,20 @@ pipeline {
 
     post {
         failure {
-            mail to: 'your-email@example.com',
+            mail to: 'glen.omondi@student.moringaschool.com',
+                 subject: "🚨 Jenkins Build Failed",
+                 body: "Tests failed in Jenkins pipeline. Please investigate."
+        }
+    }
+}
+'
+            }
+        }
+    }
+
+    post {
+        failure {
+            mail to: 'glen.omondi@student.moringaschool.com',
                  subject: "🚨 Jenkins Build Failed",
                  body: "Tests failed in Jenkins pipeline. Please investigate."
         }
